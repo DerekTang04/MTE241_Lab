@@ -28,12 +28,12 @@ uint32_t * alloc_thread(void)
 bool osCreateThread(void (*thread_function)(void*))
 {
   uint32_t *stack_ptr = alloc_thread();
-  last_stack_init = stack_ptr;
 
   if(stack_ptr == NULL)
   {
     return false;
   }
+  last_stack_init = stack_ptr;
 
   *(--stack_ptr) = 1<<24;
   *(--stack_ptr) = (uint32_t)thread_function;
