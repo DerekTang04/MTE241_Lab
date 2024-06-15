@@ -22,10 +22,8 @@ typedef struct k_thread{
 } thread;
 
 // function prototypes
-uint32_t * alloc_thread(void);
 bool osCreateThread(void (*thread_function)(void*));
 void osKernelInitialize(void);
 void osKernelStart(void);
-void SVC_Handler_Main( unsigned int *svc_args );
 
 #endif /* INC_KERNEL_H_ */
