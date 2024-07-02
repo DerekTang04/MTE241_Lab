@@ -24,7 +24,7 @@ void SVC_Handler_Main( unsigned int *svc_args )
   switch( svc_number )
   {
     case RUN_FIRST_THREAD:
-      __set_PSP((uint32_t)thread1.sp);
+      __set_PSP((uint32_t)thread1.sp - 0x40);
       runFirstThread();
       break;
     default:
@@ -48,18 +48,19 @@ uint32_t * alloc_thread(void)
 bool osCreateThread(void (*thread_function)(void*))
 {
   uint32_t *stack_ptr = alloc_thread();
-
   if(stack_ptr == NULL)
   {
     return false;
   }
+
+  uint32_t *tmp = stack_ptr;
   last_stack_init = stack_ptr;
 
-  *(--stack_ptr) = 1<<24;
-  *(--stack_ptr) = (uint32_t)thread_function;
+  *(--tmp) = 1<<24;
+  *(--tmp) = (uint32_t)thread_function;
   for(int i = 0; i < 14; ++i)
   {
-    *(--stack_ptr) = 0xA;
+    *(--tmp) = 0xA;
   }
 
   thread1.sp = stack_ptr;
