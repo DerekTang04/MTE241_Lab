@@ -10,11 +10,19 @@
 
 #include <stdbool.h>
 
-// defines
+// registers
+#define SHPR2 *(uint32_t*)0xE000ED1C //for setting SVC priority, bits 31-24
+#define SHPR3 *(uint32_t*)0xE000ED20 // PendSV is bits 23-16
+#define _ICSR *(uint32_t*)0xE000ED04 //This lets us trigger PendSV
+
+// stack management
 #define MAX_STACK_SIZE 0x4000
 #define THREAD_STACK_SIZE 0x400
 #define THREAD_CONTEXT_OFFSET 0x40
+
+// SVC numbers
 #define RUN_FIRST_THREAD 0x00
+#define YIELD 0x01
 
 // thread context
 typedef struct k_thread{
@@ -26,5 +34,6 @@ typedef struct k_thread{
 bool osCreateThread(void (*thread_function)(void*));
 void osKernelInitialize(void);
 void osKernelStart(void);
+void osYield(void);
 
 #endif /* INC_KERNEL_H_ */

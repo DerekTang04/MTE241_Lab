@@ -58,12 +58,23 @@ static void MX_USART2_UART_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-void print_continuously()
+void print1()
 {
-  for(;;)
+  while(true)
   {
-    printf("Hello, PC!\r\n");
+    printf("Hello World!\r\n");
     HAL_Delay(1000);
+    osYield();
+  }
+}
+
+void print2()
+{
+  while(true)
+  {
+    printf("Hello Jeff!\r\n");
+    HAL_Delay(1000);
+    osYield();
   }
 }
 /* USER CODE END 0 */
@@ -100,7 +111,8 @@ int main(void)
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
   osKernelInitialize();
-  osCreateThread(print_continuously);
+  osCreateThread(print1);
+  osCreateThread(print2);
   osKernelStart();
   /* USER CODE END 2 */
 

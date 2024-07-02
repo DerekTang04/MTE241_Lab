@@ -1,16 +1,22 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdlib.h>
+
+#include <stdio.h>
 
 #include "main.h"
 #include "kernel.h"
 
 extern void runFirstThread(void);
 
-static thread thread1;
+static uint32_t thread_idx = 0;
+static uint32_t thread_count = 0;
+static uint32_t thread_count_max = 0;
+
 static uint32_t *msp_init = NULL;
-static uint32_t *final_addr = NULL;
 static uint32_t *last_stack_init = NULL;
+static thread *threads;
 
 void SVC_Handler_Main( unsigned int *svc_args )
 {
@@ -24,20 +30,34 @@ void SVC_Handler_Main( unsigned int *svc_args )
   switch( svc_number )
   {
     case RUN_FIRST_THREAD:
-      __set_PSP((uint32_t)thread1.sp - 0x40);
+      __set_PSP((uint32_t)threads[thread_idx].sp);
       runFirstThread();
       break;
+
+    case YIELD:
+      //Pend an interrupt to do the context switch
+      _ICSR |= 1<<28;
+      __asm("isb");
+      break;
+
     default:
       break;
   }
 }
 
+void osSched()
+{
+  threads[thread_idx].sp = (uint32_t*)(__get_PSP() - 8*4);
+  thread_idx = (thread_idx + 1) % thread_count;
+  __set_PSP((uint32_t)threads[thread_idx].sp);
+}
+
 uint32_t * alloc_thread(void)
 {
-  uint32_t *candidate_addr = (uint32_t*)((uint32_t)last_stack_init - THREAD_STACK_SIZE);
-  if(candidate_addr >= final_addr)
+  if(thread_count < thread_count_max)
   {
-    return candidate_addr;
+    thread_count++;
+    return (uint32_t*)((uint32_t)last_stack_init - THREAD_STACK_SIZE);
   }
   else
   {
@@ -63,15 +83,20 @@ bool osCreateThread(void (*thread_function)(void*))
     *(--tmp) = 0xA;
   }
 
-  thread1.sp = stack_ptr;
-  thread1.thread_function = thread_function;
+  thread tmp_context = {tmp, thread_function};
+  threads[thread_count - 1] = tmp_context;
   return true;
 }
 
 void osKernelInitialize(void)
 {
+  SHPR3 |= 0xFE << 16; //shift the constant 0xFE 16 bits to set PendSV priority
+  SHPR2 |= 0xFDU << 24; //Set the priority of SVC higher than PendSV
+
+  thread_count_max = (MAX_STACK_SIZE / THREAD_STACK_SIZE) - 1;
+  threads = malloc(sizeof(thread) * thread_count_max);
+
   msp_init = *(uint32_t**)0x0;
-  final_addr = (uint32_t*)(((uint32_t)msp_init - MAX_STACK_SIZE) + THREAD_STACK_SIZE);
   last_stack_init = msp_init;
 }
 
@@ -79,3 +104,9 @@ void osKernelStart(void)
 {
   __asm("SVC #0");
 }
+
+void osYield(void)
+{
+  __asm("SVC #1");
+}
+
