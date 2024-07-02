@@ -18,7 +18,6 @@
 // stack management
 #define MAX_STACK_SIZE 0x4000
 #define THREAD_STACK_SIZE 0x400
-#define THREAD_CONTEXT_OFFSET 0x40
 
 // SVC numbers
 #define RUN_FIRST_THREAD 0x00

@@ -3,8 +3,6 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#include <stdio.h>
-
 #include "main.h"
 #include "kernel.h"
 
@@ -15,7 +13,7 @@ static uint32_t thread_count = 0;
 static uint32_t thread_count_max = 0;
 
 static uint32_t *msp_init = NULL;
-static uint32_t *last_stack_init = NULL;
+static uint32_t *last_stack_top = NULL;
 static thread *threads;
 
 void SVC_Handler_Main( unsigned int *svc_args )
@@ -56,8 +54,7 @@ uint32_t * alloc_thread(void)
 {
   if(thread_count < thread_count_max)
   {
-    thread_count++;
-    return (uint32_t*)((uint32_t)last_stack_init - THREAD_STACK_SIZE);
+    return (uint32_t*)((uint32_t)last_stack_top - THREAD_STACK_SIZE);
   }
   else
   {
@@ -73,17 +70,17 @@ bool osCreateThread(void (*thread_function)(void*))
     return false;
   }
 
-  uint32_t *tmp = stack_ptr;
-  last_stack_init = stack_ptr;
+  last_stack_top = stack_ptr;
+  thread_count++;
 
-  *(--tmp) = 1<<24;
-  *(--tmp) = (uint32_t)thread_function;
+  *(--stack_ptr) = 1<<24;
+  *(--stack_ptr) = (uint32_t)thread_function;
   for(int i = 0; i < 14; ++i)
   {
-    *(--tmp) = 0xA;
+    *(--stack_ptr) = 0xA;
   }
 
-  thread tmp_context = {tmp, thread_function};
+  thread tmp_context = {stack_ptr, thread_function};
   threads[thread_count - 1] = tmp_context;
   return true;
 }
@@ -97,7 +94,7 @@ void osKernelInitialize(void)
   threads = malloc(sizeof(thread) * thread_count_max);
 
   msp_init = *(uint32_t**)0x0;
-  last_stack_init = msp_init;
+  last_stack_top = msp_init;
 }
 
 void osKernelStart(void)
