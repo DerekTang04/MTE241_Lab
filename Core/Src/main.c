@@ -47,7 +47,7 @@ typedef struct {
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
-uint32_t* thread1_ptr;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
