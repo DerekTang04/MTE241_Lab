@@ -22,13 +22,15 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
-
 #include "kernel.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-
+typedef struct {
+  uint32_t num1;
+  uint32_t num2;
+} my_struct;
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -58,23 +60,22 @@ static void MX_USART2_UART_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-void print1()
+void print1(void *args)
 {
   while(true)
   {
     printf("Hello World!\r\n");
-    HAL_Delay(1000);
     osYield();
   }
 }
 
-void print2()
+void print2(void *args)
 {
+  my_struct data = *(my_struct*)args;
   while(true)
   {
-    printf("Hello Jeff!\r\n");
-    HAL_Delay(1000);
-    osYield();
+    printf("num1 is %ld    num2 is %ld\r\n", data.num1, data.num2);
+    HAL_Delay(500);
   }
 }
 /* USER CODE END 0 */
@@ -87,7 +88,7 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-
+  my_struct args = {3, 4};
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -111,8 +112,8 @@ int main(void)
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
   osKernelInitialize();
-  osCreateThread(print1);
-  osCreateThread(print2);
+  osCreateThread(print1, NULL);
+  osCreateThreadWithDeadline(print2, &args, 1000);
   osKernelStart();
   /* USER CODE END 2 */
 

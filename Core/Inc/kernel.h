@@ -25,12 +25,19 @@
 
 // thread context
 typedef struct k_thread{
+  uint32_t timeslice;
+  uint32_t runtime;
   uint32_t* sp;
   void (*thread_function)(void*);
 } thread;
 
+// global variables
+extern uint32_t thread_idx;
+extern thread *threads;
+
 // function prototypes
-bool osCreateThread(void (*thread_function)(void*));
+bool osCreateThread(void (*thread_function)(void*), void *args);
+bool osCreateThreadWithDeadline(void (*thread_function)(void*), void *args, uint32_t timeslice);
 void osKernelInitialize(void);
 void osKernelStart(void);
 void osYield(void);
