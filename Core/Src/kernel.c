@@ -8,13 +8,14 @@
 
 extern void runFirstThread(void);
 
-static uint32_t thread_idx = 0;
+uint32_t thread_idx = 0;
+thread *threads;
+
 static uint32_t thread_count = 0;
 static uint32_t thread_count_max = 0;
 
 static uint32_t *msp_init = NULL;
 static uint32_t *last_stack_top = NULL;
-static thread *threads;
 
 void SVC_Handler_Main( unsigned int *svc_args )
 {
@@ -46,6 +47,8 @@ void SVC_Handler_Main( unsigned int *svc_args )
 void osSched()
 {
   threads[thread_idx].sp = (uint32_t*)(__get_PSP() - 8*4);
+  threads[thread_idx].runtime = threads[thread_idx].timeslice;
+
   thread_idx = (thread_idx + 1) % thread_count;
   __set_PSP((uint32_t)threads[thread_idx].sp);
 }
@@ -62,7 +65,7 @@ uint32_t * alloc_thread(void)
   }
 }
 
-bool osCreateThread(void (*thread_function)(void*))
+bool osCreateThread(void (*thread_function)(void*), void *args)
 {
   uint32_t *stack_ptr = alloc_thread();
   if(stack_ptr == NULL)
@@ -75,13 +78,29 @@ bool osCreateThread(void (*thread_function)(void*))
 
   *(--stack_ptr) = 1<<24;
   *(--stack_ptr) = (uint32_t)thread_function;
-  for(int i = 0; i < 14; ++i)
+  for(int i = 0; i < 5; ++i)
+  {
+    *(--stack_ptr) = 0xA;
+  }
+  *(--stack_ptr) = (uint32_t)args;
+  for(int i = 0; i < 8; ++i)
   {
     *(--stack_ptr) = 0xA;
   }
 
-  thread tmp_context = {stack_ptr, thread_function};
+  thread tmp_context = {5, 5, stack_ptr, thread_function};
   threads[thread_count - 1] = tmp_context;
+  return true;
+}
+
+bool osCreateThreadWithDeadline(void (*thread_function)(void*), void *args, uint32_t timeslice)
+{
+  if(!osCreateThread(thread_function, args))
+  {
+    return false;
+  }
+  threads[thread_count - 1].timeslice = timeslice;
+  threads[thread_count - 1].runtime = timeslice;
   return true;
 }
 
